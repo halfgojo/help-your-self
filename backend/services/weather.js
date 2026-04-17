@@ -16,6 +16,18 @@ function getWeatherDescription(code) {
 }
 
 /**
+ * Generates official-style IMD Alerts (India Meteorological Department)
+ * based on extreme weather conditions to trigger preventative protocols in the AI.
+ */
+function checkIMDAlerts(temperature, precipitation) {
+  if (temperature >= 42) return { level: 'RED', type: 'Severe Heatwave', action: 'IMD Alert: Extreme heat risk. Stay indoors.' };
+  if (temperature >= 38) return { level: 'ORANGE', type: 'Heatwave', action: 'IMD Alert: High heat risk. Hydration crucial.' };
+  if (precipitation >= 30) return { level: 'RED', type: 'Extremely Heavy Rainfall', action: 'IMD Alert: Flash flood & vector-borne disease risk.' };
+  if (precipitation >= 15) return { level: 'YELLOW', type: 'Heavy Rainfall', action: 'IMD Alert: Monsoonal disease risk (Dengue/Malaria).' };
+  return null;
+}
+
+/**
  * Given a location string (e.g. "Mumbai, India"), fetch the live weather context.
  * Returns null if location cannot be geocoded or API fails.
  */
@@ -55,12 +67,16 @@ async function fetchWeather(locationString) {
     const current = weatherResponse.data?.current;
     if (!current) return null;
 
+    const condition = getWeatherDescription(current.weather_code);
+    const imdAlert = checkIMDAlerts(current.temperature_2m, current.precipitation);
+
     return {
       location: resolvedLocation,
       temperature: current.temperature_2m,
       humidity: current.relative_humidity_2m,
       precipitation: current.precipitation,
-      condition: getWeatherDescription(current.weather_code)
+      condition,
+      imdAlert
     };
 
   } catch (err) {

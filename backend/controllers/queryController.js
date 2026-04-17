@@ -20,6 +20,7 @@ const { fetchFromClinicalTrials } = require('../services/clinicalTrials');
 const { rankPublications, rankTrials } = require('../services/ranking');
 const { generateMedicalInsights, generateMedicalInsightsStream, expandSearchQuery } = require('../services/llm');
 const { fetchWeather } = require('../services/weather');
+const { translateText } = require('../services/bhashini');
 const Conversation = require('../models/Conversation');
 const mongoose = require('mongoose');
 
@@ -347,4 +348,20 @@ async function handleQueryStream(req, res) {
   }
 }
 
-module.exports = { handleQuery, handleQueryStream };
+// ---------- Translations ----------
+
+async function handleTranslation(req, res) {
+  try {
+    const { text, targetLang } = req.body;
+    if (!text || !targetLang) {
+      return res.status(400).json({ error: 'Missing text or targetLang' });
+    }
+    const translatedText = await translateText(text, targetLang);
+    return res.json({ text: translatedText });
+  } catch (err) {
+    console.error('[HelpYourself] Translation route error:', err.message);
+    return res.status(500).json({ error: 'Translation failed' });
+  }
+}
+
+module.exports = { handleQuery, handleQueryStream, handleTranslation };

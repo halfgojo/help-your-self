@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { handleQuery, handleQueryStream } = require('../controllers/queryController');
+const { handleQuery, handleQueryStream, handleTranslation } = require('../controllers/queryController');
 const {
   listConversations,
   getConversation,
@@ -18,6 +18,9 @@ router.post('/query', handleQuery);
 
 // Streaming query endpoint
 router.post('/query-stream', handleQueryStream);
+
+// Translation endpoint
+router.post('/translate', handleTranslation);
 
 // Conversation management
 router.get('/conversations', listConversations);

@@ -38,7 +38,8 @@ function buildUserPrompt({ patientName, disease, query, location, weather, india
     query && `Research Query: ${query}`,
     location && `Location: ${location}`,
     indianFocus && `CRITICAL REQUIREMENT: The user has requested EXCLUSIVELY Indian-focused medical help. You MUST tailor all your insights, preventatives, and context explicitly for the Indian medical landscape.`,
-    weather && `Current Local Weather: ${weather.temperature}°C, ${weather.humidity}% humidity, ${weather.condition}`,
+    weather && `Current Local Weather: ${weather.temperature}°C, ${weather.precipitation}mm rain, ${weather.condition}`,
+    weather?.imdAlert && `⚠️ CRITICAL IMD ALERT: ${weather.imdAlert.level} - ${weather.imdAlert.type}. ${weather.imdAlert.action} (You MUST incorporate these climate emergency protocols heavily into your preventative recommendations!)`
   ]
     .filter(Boolean)
     .join('\n');

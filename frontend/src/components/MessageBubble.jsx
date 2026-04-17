@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import SourceCard from './SourceCard';
 import TrialCard from './TrialCard';
+import { translateText } from '../api';
 
 function formatTime(ts) {
   return new Date(ts || Date.now()).toLocaleTimeString([], {
@@ -44,6 +45,18 @@ function DeepDiveTab({ publications, trials, disease, query, weather }) {
 
   return (
     <div className="deep-dive-tab">
+      {/* IMD Alert Banner */}
+      {weather?.imdAlert && (
+        <div style={{ backgroundColor: weather.imdAlert.level === 'RED' ? 'rgba(255, 60, 60, 0.15)' : 'rgba(255, 170, 0, 0.15)', border: `1px solid ${weather.imdAlert.level === 'RED' ? '#ff3c3c' : '#ffaa00'}`, padding: '16px', borderRadius: '12px', marginBottom: '24px' }}>
+          <div style={{ color: weather.imdAlert.level === 'RED' ? '#ff3c3c' : '#ffaa00', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '1.2rem' }}>⚠️</span> 
+            IMD {weather.imdAlert.level} ALERT: {weather.imdAlert.type}
+          </div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-color)', lineHeight: '1.5' }}>
+            {weather.imdAlert.action}
+          </div>
+        </div>
+      )}
 
       {/* Overview Stats */}
       <div className="deep-dive-stats-row">
@@ -227,6 +240,10 @@ function DeepDiveTab({ publications, trials, disease, query, weather }) {
 // ─── Main AI Response Card ────────────────────────────────────────────────────
 function AIResponseCard({ content, data, isStreaming }) {
   const [activeTab, setActiveTab] = useState('insights');
+  const [translatedContent, setTranslatedContent] = useState(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [selectedLang, setSelectedLang] = useState('en');
+
   const { publications = [], clinicalTrials = [], stats, disease, query, weather } = data || {};
 
   const tabs = [
@@ -235,6 +252,28 @@ function AIResponseCard({ content, data, isStreaming }) {
     { id: 'trials', label: 'Clinical Trials', count: clinicalTrials.length },
     { id: 'deepdive', label: 'Deep Dive' },
   ];
+
+  const handleTranslate = async (e) => {
+    const lang = e.target.value;
+    setSelectedLang(lang);
+    
+    if (lang === 'en') {
+      setTranslatedContent(null);
+      return;
+    }
+    
+    if (content && !isStreaming) {
+      setIsTranslating(true);
+      try {
+        const result = await translateText(content, lang);
+        setTranslatedContent(result);
+      } catch (err) {
+        console.error('Translation failed', err);
+      } finally {
+        setIsTranslating(false);
+      }
+    }
+  };
 
   return (
     <div className="message-wrapper assistant">
@@ -264,34 +303,60 @@ function AIResponseCard({ content, data, isStreaming }) {
           </div>
 
           {/* Tabs */}
-          <div className="tabs">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                id={`tab-${tab.id}`}
-                className={`tab ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
+          <div className="tabs" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  id={`tab-${tab.id}`}
+                  className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                  {tab.count !== undefined && (
+                    <span className="tab-count">{tab.count}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            {activeTab === 'insights' && !isStreaming && (
+              <select 
+                className="translate-select" 
+                value={selectedLang} 
+                onChange={handleTranslate}
+                disabled={isTranslating}
+                style={{
+                  background: 'var(--surface-color)', color: 'var(--text-color)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '4px 8px', fontSize: '0.8rem', cursor: 'pointer'
+                }}
               >
-                {tab.label}
-                {tab.count !== undefined && (
-                  <span className="tab-count">{tab.count}</span>
-                )}
-              </button>
-            ))}
+                <option value="en">English</option>
+                <option value="hi">Hindi (हिन्दी)</option>
+                <option value="bn">Bengali (বাংলা)</option>
+                <option value="ta">Tamil (தமிழ்)</option>
+                <option value="te">Telugu (తెలుగు)</option>
+                <option value="mr">Marathi (मराठी)</option>
+                <option value="gu">Gujarati (ગુજરાતી)</option>
+                <option value="ur">Urdu (اردو)</option>
+                <option value="ml">Malayalam (മലയാളം)</option>
+              </select>
+            )}
           </div>
 
           {/* Tab Bodies */}
           <div className="ai-response-body">
             {activeTab === 'insights' && (
               <div className={`markdown-content ${isStreaming ? 'streaming-cursor' : ''}`}>
-                {content
-                  ? <ReactMarkdown>{content}</ReactMarkdown>
-                  : (
-                    <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>
-                      Analysing research and generating personalised insights…
-                    </div>
-                  )
-                }
+                {isTranslating ? (
+                  <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                    Translating insights via Bhashini...
+                  </div>
+                ) : content ? (
+                  <ReactMarkdown>{translatedContent || content}</ReactMarkdown>
+                ) : (
+                  <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                    Analysing research and generating personalised insights…
+                  </div>
+                )}
               </div>
             )}
 

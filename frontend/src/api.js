@@ -69,6 +69,11 @@ export async function submitQueryStream({ patientName, disease, query, location,
   }
 }
 
+export async function translateText(text, targetLang) {
+  const response = await api.post('/translate', { text, targetLang });
+  return response.data.text;
+}
+
 export async function listConversations() {
   const response = await api.get('/conversations');
   return response.data.conversations;
