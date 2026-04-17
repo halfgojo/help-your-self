@@ -8,15 +8,10 @@ const queryRoutes = require('./routes/query');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware — allow Vite dev server (5173) and production origins
+// Middleware — allow all origins for cloud deployment
 app.use(
   cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173',
-    ],
-    credentials: true,
+    origin: '*',
   })
 );
 app.use(express.json({ limit: '10mb' }));
