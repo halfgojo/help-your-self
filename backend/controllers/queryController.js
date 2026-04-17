@@ -21,6 +21,7 @@ const { rankPublications, rankTrials } = require('../services/ranking');
 const { generateMedicalInsights, generateMedicalInsightsStream, expandSearchQuery } = require('../services/llm');
 const { fetchWeather } = require('../services/weather');
 const Conversation = require('../models/Conversation');
+const mongoose = require('mongoose');
 
 // ---------- Query Expansion ----------
 
@@ -49,25 +50,32 @@ async function handleQuery(req, res) {
     const disease_ = disease.trim();
     const query_ = rawQuery.trim();
 
-    // Determine conversation session
     let conversationId = existingConvId;
     let conversation = null;
 
-    if (conversationId) {
-      conversation = await Conversation.findOne({ conversationId });
+    const isDbConnected = mongoose.connection.readyState === 1;
+
+    if (conversationId && isDbConnected) {
+      try {
+        conversation = await Conversation.findOne({ conversationId });
+      } catch (e) {
+        console.warn('DB lookup failed, operating in memory');
+      }
     }
 
     if (!conversation) {
-      // Start a new conversation session
-      conversationId = uuidv4();
-      conversation = new Conversation({
-        conversationId,
-        patientName,
-        disease: disease_,
-        location,
-        indianFocus,
-        messages: [],
-      });
+      conversationId = conversationId || uuidv4();
+      if (isDbConnected) {
+        conversation = new Conversation({
+          conversationId, patientName, disease: disease_, location, indianFocus, messages: [],
+        });
+      } else {
+        // Incognito Mode Mock
+        conversation = {
+          conversationId, patientName, disease: disease_, location, indianFocus, messages: [],
+          save: async () => { /* no-op */ }
+        };
+      }
     }
 
     // ---- Step 2: Query Expansion ----
@@ -225,20 +233,29 @@ async function handleQueryStream(req, res) {
     let conversationId = existingConvId;
     let conversation = null;
 
-    if (conversationId) {
-      conversation = await Conversation.findOne({ conversationId });
+    const isDbConnected = mongoose.connection.readyState === 1;
+
+    if (conversationId && isDbConnected) {
+      try {
+        conversation = await Conversation.findOne({ conversationId });
+      } catch (e) {
+        console.warn('DB lookup failed, operating in memory');
+      }
     }
 
     if (!conversation) {
-      conversationId = uuidv4();
-      conversation = new Conversation({
-        conversationId,
-        patientName,
-        disease: disease_,
-        location,
-        indianFocus,
-        messages: [],
-      });
+      conversationId = conversationId || uuidv4();
+      if (isDbConnected) {
+        conversation = new Conversation({
+          conversationId, patientName, disease: disease_, location, indianFocus, messages: [],
+        });
+      } else {
+        // Incognito Mode Mock
+        conversation = {
+          conversationId, patientName, disease: disease_, location, indianFocus, messages: [],
+          save: async () => { /* no-op */ }
+        };
+      }
     }
 
     // Write initial connected state so frontend knows to show "searching..."

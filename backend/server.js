@@ -22,15 +22,17 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 
 // Connect to MongoDB
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('✅ Connected to MongoDB');
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
-  });
+// mongoose
+//   .connect(process.env.MONGODB_URI)
+//   .then(() => {
+//     console.log('✅ Connected to MongoDB');
+//   })
+//   .catch((err) => {
+//     console.error('❌ MongoDB connection error:', err.message);
+//     process.exit(1);
+//   });
+
+console.log('⚠️ MongoDB disabled: Conversation history will not persist.');
 
 // Routes
 app.use('/api', queryRoutes);
